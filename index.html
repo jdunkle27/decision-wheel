@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Daily Decision Picker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f4f4f4;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      width: 300px;
+      text-align: center;
+    }
+
+    input {
+      width: 70%;
+      padding: 8px;
+      margin-right: 5px;
+    }
+
+    button {
+      padding: 8px 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      background: #007bff;
+      color: white;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 15px;
+    }
+
+    li {
+      background: #eee;
+      margin: 5px 0;
+      padding: 6px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .remove {
+      background: red;
+      font-size: 12px;
+      padding: 3px 6px;
+    }
+
+    #result {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Decision Picker</h2>
+
+    <div>
+      <input type="text" id="optionInput" placeholder="Enter option">
+      <button onclick="addOption()">Add</button>
+    </div>
+
+    <ul id="optionsList"></ul>
+
+    <button onclick="pickOption()" style="margin-top:10px;">Pick for me</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    let options = [];
+
+    function addOption() {
+      const input = document.getElementById('optionInput');
+      const value = input.value.trim();
+
+      if (value === '') return;
+
+      options.push(value);
+      input.value = '';
+      renderList();
+    }
+
+    function removeOption(index) {
+      options.splice(index, 1);
+      renderList();
+    }
+
+    function renderList() {
+      const list = document.getElementById('optionsList');
+      list.innerHTML = '';
+
+      options.forEach((option, index) => {
+        const li = document.createElement('li');
+        li.textContent = option;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'X';
+        removeBtn.className = 'remove';
+        removeBtn.onclick = () => removeOption(index);
+
+        li.appendChild(removeBtn);
+        list.appendChild(li);
+      });
+    }
+
+    function pickOption() {
+      const result = document.getElementById('result');
+
+      if (options.length === 0) {
+        result.textContent = 'Add some options first.';
+        return;
+      }
+
+      const randomIndex = Math.floor(Math.random() * options.length);
+      result.textContent = 'You should choose: ' + options[randomIndex];
+    }
+  </script>
+</body>
+</html>
