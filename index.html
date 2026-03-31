@@ -1,176 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Daily Decision Picker</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background: linear-gradient(135deg, #74ebd5, #acb6e5);
-      margin: 0;
-    }
+<meta charset="UTF-8">
+<title>Decision Picker Pro+</title>
+<style>
+body {
+  font-family: Arial;
+  display:flex; justify-content:center; align-items:center;
+  height:100vh; margin:0;
+  background: linear-gradient(135deg,#74ebd5,#acb6e5);
+}
+.container {
+  background:white; padding:20px; border-radius:16px;
+  width:360px; text-align:center;
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+input { padding:8px; border-radius:6px; border:1px solid #ccc; }
+button { padding:8px; border:none; border-radius:6px; cursor:pointer; margin:2px; }
+ul { list-style:none; padding:0; max-height:120px; overflow:auto; }
+li { background:#eee; margin:5px 0; padding:6px; border-radius:6px; display:flex; justify-content:space-between; }
+.remove { background:red; color:white; }
 
-    .container {
-      background: white;
-      padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-      width: 320px;
-      text-align: center;
-    }
-
-    input {
-      width: 65%;
-      padding: 8px;
-      margin-right: 5px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-
-    button {
-      padding: 8px 10px;
-      cursor: pointer;
-      border: none;
-      border-radius: 6px;
-      background: #007bff;
-      color: white;
-      transition: transform 0.1s, background 0.2s;
-    }
-
-    button:hover {
-      background: #0056b3;
-      transform: scale(1.05);
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-      margin-top: 15px;
-    }
-
-    li {
-      background: #eee;
-      margin: 5px 0;
-      padding: 6px;
-      border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-5px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .remove {
-      background: red;
-      font-size: 12px;
-      padding: 3px 6px;
-    }
-
-    #result {
-      margin-top: 15px;
-      font-weight: bold;
-      font-size: 18px;
-      min-height: 24px;
-    }
-
-    .spin {
-      animation: spin 0.6s ease;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      50% { transform: rotate(10deg); }
-      100% { transform: rotate(0deg); }
-    }
-  </style>
+#wheel {
+  width:220px; height:220px; border-radius:50%;
+  border:5px solid #333; margin:15px auto;
+  position:relative; overflow:hidden;
+}
+.slice {
+  position:absolute; width:50%; height:50%;
+  top:50%; left:50%; transform-origin:0% 0%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px;
+}
+#pointer {
+  width:0; height:0;
+  border-left:10px solid transparent;
+  border-right:10px solid transparent;
+  border-bottom:20px solid black;
+  margin:0 auto;
+}
+</style>
 </head>
 <body>
-  <div class="container" id="container">
-    <h2>Decision Picker</h2>
+<div class="container">
+<h2>Decision Picker</h2>
 
-    <div>
-      <input type="text" id="optionInput" placeholder="Enter option">
-      <button onclick="addOption()">Add</button>
-    </div>
+<input id="optionInput" placeholder="Enter option">
+<button onclick="addOption()">Add</button>
+<input type="file" id="fileInput" accept=".txt">
 
-    <ul id="optionsList"></ul>
+<ul id="list"></ul>
 
-    <button onclick="pickOption()" style="margin-top:10px;">Pick for me</button>
+<button onclick="spin()">Spin</button>
+<button onclick="exportData()">Export</button>
+<button onclick="importData()">Import</button>
 
-    <div id="result"></div>
-  </div>
+<div id="pointer"></div>
+<div id="wheel"></div>
+<div id="result"></div>
+</div>
 
-  <script>
-    let options = JSON.parse(localStorage.getItem('options')) || [];
+<script>
+let options = JSON.parse(localStorage.getItem('opts'))||[];
+let currentRotation = 0;
 
-    function saveOptions() {
-      localStorage.setItem('options', JSON.stringify(options));
-    }
+function save(){ localStorage.setItem('opts', JSON.stringify(options)); }
 
-    function addOption() {
-      const input = document.getElementById('optionInput');
-      const value = input.value.trim();
+function addOption(){
+  let val = optionInput.value.trim();
+  if(!val) return;
+  options.push(val);
+  optionInput.value=''; save(); render();
+}
 
-      if (value === '') return;
+function remove(i){ options.splice(i,1); save(); render(); }
 
-      options.push(value);
-      input.value = '';
-      saveOptions();
-      renderList();
-    }
+function edit(i){
+  let v = prompt('Edit:', options[i]);
+  if(v){ options[i]=v; save(); render(); }
+}
 
-    function removeOption(index) {
-      options.splice(index, 1);
-      saveOptions();
-      renderList();
-    }
+function render(){
+  list.innerHTML='';
+  options.forEach((o,i)=>{
+    let li=document.createElement('li');
+    li.textContent=o;
+    li.onclick=()=>edit(i);
+    let b=document.createElement('button');
+    b.textContent='X'; b.className='remove';
+    b.onclick=(e)=>{e.stopPropagation(); remove(i);} 
+    li.appendChild(b);
+    list.appendChild(li);
+  });
+  drawWheel();
+}
 
-    function renderList() {
-      const list = document.getElementById('optionsList');
-      list.innerHTML = '';
+function drawWheel(){
+  wheel.innerHTML='';
+  let n=options.length;
+  if(n===0) return;
+  let angle=360/n;
+  options.forEach((o,i)=>{
+    let d=document.createElement('div');
+    d.className='slice';
+    d.style.background=`hsl(${i*360/n},70%,70%)`;
+    d.style.transform=`rotate(${i*angle}deg) skewY(${90-angle}deg)`;
+    d.textContent=o;
+    wheel.appendChild(d);
+  });
+}
 
-      options.forEach((option, index) => {
-        const li = document.createElement('li');
-        li.textContent = option;
+function spin(){
+  if(options.length===0) return;
+  let n=options.length;
+  let angle=360/n;
 
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = 'X';
-        removeBtn.className = 'remove';
-        removeBtn.onclick = () => removeOption(index);
+  let randIndex = Math.floor(Math.random()*n);
+  let stopAngle = 360 - (randIndex*angle) - angle/2;
 
-        li.appendChild(removeBtn);
-        list.appendChild(li);
-      });
-    }
+  let spins = 5*360;
+  currentRotation += spins + stopAngle;
 
-    function pickOption() {
-      const result = document.getElementById('result');
-      const container = document.getElementById('container');
+  wheel.style.transition='transform 2s cubic-bezier(.17,.67,.83,.67)';
+  wheel.style.transform=`rotate(${currentRotation}deg)`;
 
-      if (options.length === 0) {
-        result.textContent = 'Add some options first.';
-        return;
-      }
+  setTimeout(()=>{
+    result.textContent = 'Result: '+ options[randIndex];
+  },2000);
+}
 
-      container.classList.add('spin');
+function exportData(){
+  navigator.clipboard.writeText(JSON.stringify(options));
+  alert('Copied');
+}
 
-      setTimeout(() => {
-        const randomIndex = Math.floor(Math.random() * options.length);
-        result.textContent = 'You should choose: ' + options[randomIndex];
-        container.classList.remove('spin');
-      }, 500);
-    }
+function importData(){
+  let data=prompt('Paste JSON');
+  try{ options=JSON.parse(data); save(); render(); }
+  catch{ alert('Invalid'); }
+}
 
-    // Initial render
-    renderList();
-  </script>
+// file input support
+fileInput.addEventListener('change', e=>{
+  let file=e.target.files[0];
+  if(!file) return;
+  let reader=new FileReader();
+  reader.onload = ()=>{
+    let lines = reader.result.split(/\r?\n/).filter(l=>l.trim());
+    options.push(...lines);
+    save(); render();
+  };
+  reader.readAsText(file);
+});
+
+// enter key
+optionInput.addEventListener('keypress', e=>{
+  if(e.key==='Enter') addOption();
+});
+
+render();
+</script>
 </body>
 </html>
