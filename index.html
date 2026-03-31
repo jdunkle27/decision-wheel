@@ -10,23 +10,25 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      background: #f4f4f4;
+      background: linear-gradient(135deg, #74ebd5, #acb6e5);
       margin: 0;
     }
 
     .container {
       background: white;
       padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      width: 300px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      width: 320px;
       text-align: center;
     }
 
     input {
-      width: 70%;
+      width: 65%;
       padding: 8px;
       margin-right: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
 
     button {
@@ -36,6 +38,12 @@
       border-radius: 6px;
       background: #007bff;
       color: white;
+      transition: transform 0.1s, background 0.2s;
+    }
+
+    button:hover {
+      background: #0056b3;
+      transform: scale(1.05);
     }
 
     ul {
@@ -52,6 +60,12 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .remove {
@@ -64,11 +78,22 @@
       margin-top: 15px;
       font-weight: bold;
       font-size: 18px;
+      min-height: 24px;
+    }
+
+    .spin {
+      animation: spin 0.6s ease;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(10deg); }
+      100% { transform: rotate(0deg); }
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="container">
     <h2>Decision Picker</h2>
 
     <div>
@@ -84,7 +109,11 @@
   </div>
 
   <script>
-    let options = [];
+    let options = JSON.parse(localStorage.getItem('options')) || [];
+
+    function saveOptions() {
+      localStorage.setItem('options', JSON.stringify(options));
+    }
 
     function addOption() {
       const input = document.getElementById('optionInput');
@@ -94,11 +123,13 @@
 
       options.push(value);
       input.value = '';
+      saveOptions();
       renderList();
     }
 
     function removeOption(index) {
       options.splice(index, 1);
+      saveOptions();
       renderList();
     }
 
@@ -122,15 +153,24 @@
 
     function pickOption() {
       const result = document.getElementById('result');
+      const container = document.getElementById('container');
 
       if (options.length === 0) {
         result.textContent = 'Add some options first.';
         return;
       }
 
-      const randomIndex = Math.floor(Math.random() * options.length);
-      result.textContent = 'You should choose: ' + options[randomIndex];
+      container.classList.add('spin');
+
+      setTimeout(() => {
+        const randomIndex = Math.floor(Math.random() * options.length);
+        result.textContent = 'You should choose: ' + options[randomIndex];
+        container.classList.remove('spin');
+      }, 500);
     }
+
+    // Initial render
+    renderList();
   </script>
 </body>
 </html>
