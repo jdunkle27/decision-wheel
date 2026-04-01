@@ -37,42 +37,41 @@ li{background:#eee;margin:5px 0;padding:6px;border-radius:6px;display:flex;justi
 <button onclick="spin()">Spin</button>
 <button onclick="exportData()">Export</button>
 <button onclick="importData()">Import</button>
-
+<button onclick="resetData()">Reset</button>
 <div id="pointer"></div>
 <div id="wheel"></div>
 <div id="result"></div>
-
-<div id="ipBox">IP: loading...</div>
 </div>
 
 <script>
 let data = JSON.parse(localStorage.getItem('data')) || {options:[], categories:['Default'], logs:[]};
 let currentRotation = 0;
 
-function save(){ localStorage.setItem('data', JSON.stringify(data)); }
+const MAX_ITEMS = 100;
 
-// Fetch public IP (client-side)
-async function fetchIP(){
-  try{
-    let res = await fetch('https://api.ipify.org?format=json');
-    let json = await res.json();
-    document.getElementById('ipBox').textContent = 'IP: ' + json.ip;
-
-    // log it locally
-    data.logs.push({ip: json.ip, time: new Date().toISOString()});
-    save();
-  } catch {
-    document.getElementById('ipBox').textContent = 'IP: unavailable';
-  }
+if(data.options.length > MAX_ITEMS){
+  data.options = data.options.slice(0, MAX_ITEMS);
+  save();
 }
 
+function save(){ localStorage.setItem('data', JSON.stringify(data)); }
+
 function addOption(){
+  if(data.options.length >= MAX_ITEMS){
+    alert('Maximum of 100 items reached. Delete one first.');
+    return;
+  }
+
   let val = optionInput.value.trim();
   let w = parseInt(weightInput.value)||1;
   let cat = categorySelect.value;
+
   if(!val) return;
+
   data.options.push({text:val, weight:w, cat});
-  optionInput.value=''; save(); render();
+  optionInput.value='';
+  save();
+  render();
 }
 
 function remove(i){ data.options.splice(i,1); save(); render(); }
@@ -174,6 +173,15 @@ function importData(){
   catch{ alert('Invalid'); }
 }
 
+function resetData(){
+  try {
+    data.options = [];
+    alert('Items Reset');
+  } catch (error) {
+    alert('Something went wrong');
+  }
+}
+
 fileInput.addEventListener('change', e=>handleFile(e.target.files[0]));
 
 dropZone.addEventListener('dragover', e=>{e.preventDefault();});
@@ -184,18 +192,49 @@ dropZone.addEventListener('drop', e=>{
 
 function handleFile(file){
   if(!file) return;
-  let reader=new FileReader();
-  reader.onload=()=>{
-    let lines=reader.result.split(/\r?\n/).filter(l=>l.trim());
-    lines.forEach(l=>data.options.push({text:l,weight:1,cat:'Default'}));
-    save(); render();
+
+  const MAX_FILE_SIZE = 100 * 1024; // 100 KB
+  const MAX_LINES = 100;            // max number of options allowed
+
+  // Limit file size
+  if(file.size > MAX_FILE_SIZE){
+    alert('File too large (max 100KB)');
+    return;
+  }
+
+  let reader = new FileReader();
+
+  reader.onload = () => {
+    let lines = reader.result
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+
+    // Limit number of lines
+    if(lines.length > MAX_LINES){
+      alert(`Too many lines (max ${MAX_LINES})`);
+      lines = lines.slice(0, MAX_LINES);
+    }
+
+    // Prevent total dataset from exploding
+    if(data.options.length + lines.length > MAX_LINES){
+      alert('Too many total options stored');
+      return;
+    }
+
+    lines.forEach(l => {
+      data.options.push({text: l, weight: 1, cat: 'Default'});
+    });
+
+    save();
+    render();
   };
+
   reader.readAsText(file);
 }
 
 optionInput.addEventListener('keypress', e=>{ if(e.key==='Enter') addOption(); });
 
-fetchIP();
 render();
 </script>
 </body>
